@@ -13,8 +13,8 @@ import (
 
 	"fmt"
 
-	"github.com/AOEpeople/vistecture-dashboard/src/model/kube"
-	"github.com/AOEpeople/vistecture-dashboard/src/model/vistecture"
+	"github.com/AOEpeople/vistecture-dashboard/v2/src/model/kube"
+	"github.com/AOEpeople/vistecture-dashboard/v2/src/model/vistecture"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -38,10 +38,10 @@ type (
 // Server defines controller actions
 func (d *DashboardController) Server() error {
 	//load once (will panic before we start listen)
-	vistecture.LoadProject(d.ProjectPath)
+	project := vistecture.LoadProject(d.ProjectPath)
 
 	//Prepare the status fetcher (will run in background and starts regual checks)
-	statusFetcher := kube.NewStatusFetcher(d.ProjectPath, d.DemoMode)
+	statusFetcher := kube.NewStatusFetcher(project.Applications, d.DemoMode)
 	go statusFetcher.FetchStatusInRegularInterval()
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(path.Join(d.Templates, "static")))))

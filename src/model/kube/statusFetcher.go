@@ -10,19 +10,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AOEpeople/vistecture-dashboard/src/model/vistecture"
-	vistectureCore "github.com/AOEpeople/vistecture/model/core"
+	vistectureCore "github.com/AOEpeople/vistecture/v2/model/core"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/pkg/api/v1"
-	apps "k8s.io/client-go/pkg/apis/apps/v1beta1"
-	v1Batch "k8s.io/client-go/pkg/apis/batch/v1"
+
+	v1Batch "k8s.io/api/batch/v1"
+	apps "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+
 )
 
 type (
 	StatusFetcher struct {
 		mu                    *sync.RWMutex
 		apps                  map[string]AppDeploymentInfo
-		vistectureProjectPath string
+		definedVistectureApps []*vistectureCore.Application
 		KubeInfoService       KubeInfoServiceInterface
 	}
 
@@ -110,11 +111,11 @@ const (
 	HealthCheckType_Job           = "job"
 )
 
-func NewStatusFetcher(vistectureProjectPath string, demoMode bool) *StatusFetcher {
+func NewStatusFetcher(apps []*vistectureCore.Application, demoMode bool) *StatusFetcher {
 	statusManager := new(StatusFetcher)
 	statusManager.mu = new(sync.RWMutex)
 	statusManager.apps = make(map[string]AppDeploymentInfo)
-	statusManager.vistectureProjectPath = vistectureProjectPath
+	statusManager.definedVistectureApps = apps
 	if demoMode {
 		statusManager.KubeInfoService = &DemoService{}
 	} else {
@@ -141,8 +142,6 @@ func (stm *StatusFetcher) GetCurrentResult() map[string]AppDeploymentInfo {
 // fetchStatusInRegularInterval controls the interval in which new info is fetched and loops over configured applications
 func (stm *StatusFetcher) FetchStatusInRegularInterval() {
 	var tickIteration = 0
-	project := vistecture.LoadProject(stm.vistectureProjectPath)
-	definedApplications := project.Applications
 	lastResults := make(map[string][]AppDeploymentInfo)
 	for range time.Tick(refreshInterval * time.Second) {
 		// Add Deployments to Dashboard
@@ -175,7 +174,7 @@ func (stm *StatusFetcher) FetchStatusInRegularInterval() {
 		// results is a list of channels, which get filled by the fetcher
 		var results []chan AppDeploymentInfo
 
-		for _, app := range definedApplications {
+		for _, app := range stm.definedVistectureApps {
 			// Deployment is not on Kubernetes
 			if di, ok := app.Properties["deployment"]; !ok || di != "kubernetes" {
 				continue
@@ -291,7 +290,8 @@ func checkJob(name string, app *vistectureCore.Application, k8sJobs map[string][
 		if lastJob == nil {
 			lastJob = &job
 		}
-		if lastJob.Status.CompletionTime.Before(*job.Status.CompletionTime) {
+
+		if lastJob.Status.CompletionTime.Before(job.Status.CompletionTime) {
 			//take newer job
 			lastJob = &job
 		}

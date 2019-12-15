@@ -9,20 +9,22 @@ Works together with [Vistecture](https://github.com/aoepeople/vistecture) and sh
 
 ## Usage ##
 
-You can use the Dockerimage. `aoepeople/vistecture-dashboard`
+You can use the Dockerimage: `aoepeople/vistecture-dashboard`
 
-Example Project Dockerfile
+Just copy your vistecture definitions into /vistecture/project.yml
+
+The following Dockerfile could be used to build an image running the dashboard for your defined architecture:
 
 ```dockerfile
-FROM aoepeople/vistecture-dashboard
+FROM aoepeople/vistecture-dashboard:2.0.0
 
-COPY definition /go/src/github.com/AOEpeople/project
+COPY . /vistecture
 
 EXPOSE 8080
 
 CMD ["vistecture-dashboard"]
 
-WORKDIR /go/src/github.com/AOEpeople/vistecture-dashboard/
+WORKDIR /vistecture
 ```
 
 ### Vistecture Properties that are used:
@@ -38,28 +40,41 @@ The following "Properties" are used to control dashboard behaviour
 
 ### Healtcheck Format:
 
-```
+If a Healthcheck path is configured for the application the following format is evaluated:
 
+```json
+{
+"services": [
+    {
+        "name": "session",
+        "alive": true,
+        "details": "success"
+    },
+    {
+        "name": "magento",
+        "alive": true,
+        "details": "magento is alive"
+    },
+    {
+        "name": "om3oms-rabbitMQ-publisher",
+        "alive": false,
+        "details": "dial tcp [::1]:5672: connect: connection refused"
+    }
+]
+}
 ```
 
 ## Development: ##
 
 ```
-# install dep
-go get -u github.com/golang/dep/cmd/dep
-
-# get dependencies
-dep ensure
-
 # run
 go run vistecture-dashboard.go
 ```
 
 For a demo display please use:
 ```
-go run vistecture-dashboard.go -config=example/vistecture-config.yml -Demo=1
+go run vistecture-dashboard.go -config=example/demoproject/project.yml -Demo=1
 ```
-
 
 And access it via http://localhost:8080
 

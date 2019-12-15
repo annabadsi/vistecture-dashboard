@@ -1,12 +1,18 @@
-FROM golang:1.8-alpine
+FROM golang:1.12 as build
+RUN mkdir -p /vistecture-dashboard
+COPY . /vistecture-dashboard
+RUN cd /vistecture-dashboard && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build .
+RUN ls -al /vistecture-dashboard
 
-ADD . /go/src/github.com/AOEpeople/vistecture-dashboard
+FROM alpine:3.7
+RUN apk add --no-cache \
+  graphviz \
+  font-bitstream-type1 \
+  inotify-tools \
+  tini
+COPY --from=build /vistecture-dashboard/vistecture-dashboard /usr/local/bin
+COPY templates /vistecture/templates
+EXPOSE 8080
+CMD ["vistecture-dashboard"]
+WORKDIR /vistecture
 
-RUN apk add --update git && rm -rf /var/cache/apk/*
-RUN go get -u github.com/golang/dep/cmd/dep \
-    && cd /go/src/github.com/AOEpeople/vistecture-dashboard \
-    && dep ensure -v \
-    && go install . \
-    && rm -rf vendor \
-    && rm -rf /usr/local/go/pkg/* \
-    && rm -rf /go/pkg/*
