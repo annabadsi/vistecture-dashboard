@@ -67,7 +67,7 @@ go run vistecture-dashboard.go
 
 For a demo display please use:
 ```
-go run vistecture-dashboard.go -config=example/demoproject/project.yml -Demo=1
+go run vistecture-dashboard.go -config=example/project.yml -Demo=1
 ```
 
 And access it via http://localhost:8080
