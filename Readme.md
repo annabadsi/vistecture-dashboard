@@ -17,14 +17,8 @@ The following Dockerfile could be used to build an image running the dashboard f
 
 ```dockerfile
 FROM aoepeople/vistecture-dashboard:2.0.0
-
 COPY . /vistecture
 
-EXPOSE 8080
-
-CMD ["vistecture-dashboard"]
-
-WORKDIR /vistecture
 ```
 
 ### Vistecture Properties that are used:
